@@ -40,27 +40,23 @@ xticklabels({'-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','-17\pi'})
 xlim([-17*pi,17*pi])
 
 w_max = 4.6441*pi;
-w_s = 8*w_max;
+w_s = 2*w_max;
 Ts = ((2*pi)/w_s);
-dn = Ts/length(x_t);
-n = 0:dn:Ts-dn;
-x_zoh = ZOH_me(t,x_t,Ts);
+    dn = Ts/length(x_t);
+    n = 0:dn:Ts-dn;
+x_zoh = ZOH_me(x_t,Ts);
 
-figure(3)
-plot(t,x_t,'k','LineWidth',2)
-hold on
-plot(t,x_zoh)
-legend([{'x(t)'};{'x_Z_O_H(t)'}])
-title('Question 1.c - x(t) and x_Z_O_H in Time [sec]')
-xlabel('Time[sec]')
-ylabel('Signal x(t) && x_Z_O_H(t) in [V] - 1.c')
 
-function x_ZOH = ZOH_me(t, x_t, Ts)
-    %ZOH Sampling of x(t) with intervals n*Ts 
-    x_ZOH = zeros(1,length(x_t));
 
-    for n = 1:(length(t)-1)*Ts
-        x_ZOH(1+10*(n-1):10*n) = x_ZOH(1+10*(n-1):10*n) + x_t(1+10*(n-1));
+
+function res = ZOH_me(x_t, Ts)
+    dn = Ts/length(x_t);
+    n = 0:dn:Ts-dn;
+    
+    res = zeros(length(x_t),1)';
+    for m = 1:length(x_t)
+        h1 = WindowFunction(length(x_t),Ts,m);
+        res(m:) = res + WindowFunction(length(x_t),Ts,m);
     end
 end
 
