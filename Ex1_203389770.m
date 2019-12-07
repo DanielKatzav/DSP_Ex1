@@ -55,6 +55,14 @@ title('Question 1.c - x(t) and x_Z_O_H in Time [sec]')
 xlabel('Time[sec]')
 ylabel('Signal x(t) && x_Z_O_H(t) in [V] - 1.c')
 
+X_ZOH = fft(x_zoh);
+figure(4)
+plot(abs(X_ZOH))
+
+
+
+
+
 function x_ZOH = ZOH_me(t, x_t, Ts)
     %ZOH Sampling of x(t) with intervals n*Ts 
     x_ZOH = zeros(1,length(x_t));
@@ -63,7 +71,6 @@ function x_ZOH = ZOH_me(t, x_t, Ts)
         x_ZOH(1+10*(n-1):10*n) = x_ZOH(1+10*(n-1):10*n) + x_t(1+10*(n-1));
     end
 end
-
 function res = WindowFunction(length_vector, region_length, region_start)
     dw = 0.1;
 
