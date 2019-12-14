@@ -2,12 +2,17 @@ clear all
 close all
 clc
 
+Res = Question1();
+
+
 % ----------------- Question 1 ----------------- %
 
+function Result = Question1()
+   
 w_m = 3*pi;
 dt = 1/100;
-t = 0.2:dt:3;
 
+t = 0.2:dt:3;
 x_t = 8./(w_m*t.^2) .* ((sin((1/2)*w_m*t)).^3).*cos(2*w_m*t);
 
 figure(1)
@@ -16,55 +21,302 @@ title('Signal x(t) - Time domain')
 xlabel('Time [sec]')
 ylabel('x(t) [V]')
 
+
 dw = 0.1;
 w = -17*pi:dw:17*pi;
 
-w1 = pi.*(w-w_m/2).*sign(w-w_m/2);
-w2 = pi.*(w+w_m/2).*sign(w+w_m/2);
-w3 = pi.*(w-(3*w_m)/2).*sign(w-(3*w_m)/2);
-w4 = pi.*(w+(3*w_m)/2).*sign(w+(3*w_m)/2);
+tri_1 = MakeTriangle(dw, 2*w_m, 2.5*w_m); 
+tri_2 = MakeTriangle(dw, 2*w_m, -2.5*w_m);
+tri_3 = MakeTriangle(dw, 2*w_m, 1.5*w_m);
+tri_4 = MakeTriangle(dw, 2*w_m, -1.5*w_m);
 
-X1_w = (1/(2i)).*(3.*(pi.*(-w_m/2).*sign(-w_m/2)-pi.*(+w_m/2).*sign(+w_m/2)) - (pi.*(-(3*w_m)/2).*sign(-(3*w_m)/2)-pi.*(+(3*w_m)/2).*sign(+(3*w_m)/2)));
-
-X2_w = -2i*(3*(WindowFunction(w,(2*pi/w_m), (w_m/2)) - WindowFunction(w,(2*pi/w_m),-w_m/2)) - ( WindowFunction(w,(2*pi/w_m), (3*w_m/2))- WindowFunction(w,(2*pi/w_m), (-3*w_m/2))));
-
-
-Xw = X1_w + X2_w;
+Xw = (2*pi/w_m)*(tri_1 - tri_2 - tri_3 + tri_4);
 
 figure(2)
 plot(w,abs(Xw))
 title('Signal |X(j\omega)| - Scaled Frequency domain')
 xlabel('\omega [rad/sec]')
-ylabel('X(j\omega) [V]')
-xticklabels({'-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','-17\pi'})
-xlim([-17*pi,17*pi])
+ylabel('X(j\omega)')
+xticklabels({'-20\pi', '-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi', '20\pi'})
+xlim([-20*pi,20*pi])
 
 w_max = 4.6441*pi;
-w_s = 2*w_max;
+BW = 4*w_m;
+w_s = 2*BW;
 Ts = ((2*pi)/w_s);
-    dn = Ts/length(x_t);
-    n = 0:dn:Ts-dn;
-x_zoh = ZOH_me(x_t,Ts);
+n = 1:1/Ts:length(t);
+
+x_zoh = ZOH_me(t,x_t,Ts);
+k = 0;
+x_sample = zeros(length(n),1);
+for m = 0:1/Ts:length(t)-Ts
+    x_sample(k+1,1) = x_zoh(1,k/Ts+1);
+    k = k+1;
+end
+figure(3)
+plot(t,x_t,'k','LineWidth',2)
+hold on
+plot(t,x_zoh)
+
+legend([{'x(t)'};{'x_Z_O_H(t)'}])
+title('Question 1.c - x(t) and x_Z_O_H in Time')
+xlabel('Time [sec]')
+ylabel('Signal x(t) && x_Z_O_H(t) in [V] - 1.c')
 
 
 
 
-function res = ZOH_me(x_t, Ts)
-    dn = Ts/length(x_t);
-    n = 0:dn:Ts-dn;
+x_s = 8./(w_m*t_n.^2) .* ((sin((1/2)*w_m*t_n)).^3).*cos(2*w_m*t_n);
+
+Xw_s = zeros(1,length(w));
+% w_n = round(1:w_s:(length(w)-w_s));
+for w_n = round(1:w_s:(length(w)))
+    Xw_s(w_n) = (1/Ts)*Xw(w_n);
+end
+% figure(4)
+% plot(w, abs(Xw_s))
+
+% figure(4)
+% plot(t,x_t)
+% hold on
+% plot(t_n,x_s, '.')
+% title('Plot of x(t) compared to x_r_e_c(t)')
+% xlabel('t [sec]')
+% ylabel('f(t) [V]')
+% legend('x(t)','x_r_e_c(t)')
+% xlim([0,3])
+
+X_ZOH = Ts*((( exp(-1i*w*(Ts/2))).*(sinc(1i*(w/w_s))) )  .*  Xw_s);
+
+figure(4)
+plot(w, abs(X_ZOH))
+hold on
+plot(w, abs(Xw))
+title('Question 1.d - X_Z_O_H(j\omega) in Scaled Frequency domain')
+xlabel('\omega [rad/sec]')
+ylabel('X_Z_O_H(j\omega)')
+xticklabels({'-20\pi', '-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi', '20\pi'})
+% xlim([-20*pi,20*pi])
+
+Hw = (exp((1i*w*Ts)/2)./sinc(w/w_s)).*(abs(w)<=w_s/2);
+figure(5)
+plot(w, abs(Hw))
+title('Question 1.e - H(j\omega) in Scaled Frequency domain')
+xlabel('\omega [rad/sec]')
+ylabel('H(j\omega)')
+xticklabels({'-20\pi', '-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi', '20\pi'})
+xlim([-20*pi,20*pi])
+
+
+Xw_rec = X_ZOH .* Hw;
+figure(6)
+plot(w, abs(Xw_rec))
+title('Question 1.e - X_r_e_c(j\omega) in Scaled Frequency domain')
+xlabel('\omega [rad/sec]')
+ylabel('X_r_e_c(j\omega)')
+xticklabels({'-20\pi', '-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi', '20\pi'})
+xlim([-20*pi,20*pi])
+
+
+x_rec = zeros(1,length(t_n));
+for k = 1:length(t)
+   x_rec(k) = trapz(w,Xw_rec.*exp(1i*w*t(k)))/2*pi;
+end
+% x_rec = ifft(Xw_rec,length(t));
+figure(7)
+plot(t,x_t)
+hold on
+plot(t,x_rec)
+title('Plot of x(t) compared to x_r_e_c(t)')
+xlabel('t [sec]')
+ylabel('f(t) [V]')
+legend('x(t)','x_r_e_c(t)')
+
+Result = 0;
+end
+function x_ZOH = ZOH_me(t, x_t, Ts)
+    %ZOH Sampling of x(t) with intervals n*Ts 
+    Rate = round(1/Ts);
+    x_ZOH = zeros(1,length(x_t));
     
-    res = zeros(length(x_t),1)';
-    for m = 1:length(x_t)
-        h1 = WindowFunction(length(x_t),Ts,m);
-        res(m:) = res + WindowFunction(length(x_t),Ts,m);
+   
+    for n = 1:Rate:(length(x_t)-Rate)
+        x_ZOH(n:n+Rate) = x_t(n);
+    end
+end
+function res = MakeTriangle(dw, w_length, w_center)
+
+res = [zeros(1,length(-17*pi:dw:w_center-w_length/2)) triang(w_length/dw)' zeros(1,length(w_center+w_length/2:dw:17*pi))];
+    
+end
+
+% ----------------- Question 2 ----------------- %
+
+
+function Result2 = Question2()
+close all
+clear all
+
+w_A = 10*pi;
+w_B = 6*pi;
+Ns = 11;
+t = 0:0.01:10;
+n=linspace(0,0.5,Ns); 
+
+
+
+x_t = 1i*cos(w_A*t) + 3i*sin(w_B*t);
+x_p = 1i*cos(w_A*n) + 3i*sin(w_B*n);
+
+Q2a(t,n,x_t,x_p);
+[a,F] = Q2b(n,(x_p));
+Q2c(t,n,x_t,a,F);
+
+% Q2d :
+a = 0;
+b = 0.5;
+random_samples = (sort((b-a).*rand(11,1) + a))';
+
+Q2a(t,random_samples,x_t,x_p);
+[a,F] = Q2b(random_samples,(x_p));
+Q2c(t,random_samples,x_t,a,F);
+
+
+Result2 = 0;
+end
+function res = Q2a(t,n,x_t,x_p)
+T = 0.5;
+figure()
+plot(t,abs(x_t))
+hold on
+stem(n,abs(x_p))
+title('Plot of x(t) compared to sampled x_p(t) at interval [0,2]')
+xlabel('t [sec]')
+ylabel('f(t) [V]')
+legend('x(t)','x_p(t)')
+xlim([0 T])
+res = 0;
+end
+function [a,F] = Q2b(n,x_p)
+
+w0 = 2*pi;
+a = zeros(length(x_p),1);
+F = zeros(length(x_p),length(a));
+M = 5;
+
+for i = 1:length(n)   
+    for j = 1:length(a)
+        k_j = (j-1-M);
+        if (abs(k_j) == 3 || abs(k_j) == 5)
+            F(i,j) = exp(1i*n(i)*w0*k_j);
+        end
     end
 end
 
-function res = WindowFunction(length_vector, region_length, region_start)
-    dw = 0.1;
+a = pinv(F)*x_p';
 
-    starting_point = round(region_start/dw +round(length(length_vector)/2));
-    res = zeros(length(length_vector),1);
-    res(starting_point:starting_point+region_length,1) = 1;
-   
 end
+function res = Q2c(t,n,x_t,a,F)
+T = 0.5; 
+w0 = 2*pi;
+M = 5;
+x_r = zeros(1,length(t));
+t_rec=linspace(0,0.5,1001);
+for i = 1:length(t)
+    for k = -M:M
+        x_r(i) = x_r(i) + a(k+M+1)*exp(1i*k*w0*t_rec(i));
+    end
+end
+figure()
+plot(t,abs(x_t))
+hold on
+plot(t_rec,abs(x_r), '--')
+title('Plot of x(t) compared to reconstructed x_r(t) using least squares approx.')
+xlabel('t [sec]')
+ylabel('f(t) [V]')
+legend('x(t)','x_r(t)')
+xlim([0 T])
+res = 0;
+end
+
+% ----------------- Question 3 ----------------- %
+function Result = Question3()
+
+t = -20:0.001:20;
+T = 10;
+f = 1+cos((4*pi*t)/T)+2*sin((6*pi*t)/T);
+g = 2*sign(sin((5*pi*t)/T))-4*sign(sin((4*pi*t)/T));
+n = -20:20;
+m = 0:19;
+
+% Q3a == projection(x,A,T)
+
+
+phi = exp(1i*2*pi*t'*n/T);
+psi = zeros(length(t),length(m));
+for k = -5:5
+    psi = psi + heaviside(t'-T*(m+0.5)/20-T*k)-heaviside(t'-T/20-T*(m+0.5)/20-T*k);
+end
+
+
+f_per = f(1:T/((t(end)-t(1))/(length(t)-1))).';         %vector of 1 period of f(t)
+phi_per = phi(1:T/((t(end)-t(1))/(length(t)-1)),:);     %vector of 1 period of phi(t)
+g_per = g(1:T/((t(end)-t(1))/(length(t)-1))).';         %vector of 1 period of g(t)
+psi_per = psi(1:T/((t(end)-t(1))/(length(t)-1)),:);     %vector of 1 period of psi(t)
+
+cn_f_phi = projection(f_per,phi_per,T);     
+cn_f_psi = projection(f_per,psi_per,T);
+cn_g_phi = projection(g_per,phi_per,T);
+cn_g_psi = projection(g_per,psi_per,T);
+
+
+f_r_phi = cn_f_phi*phi.';       %reconstructed signal f(t) from phi_n
+f_r_psi = cn_f_psi*psi.';       %reconstructed signal f(t) from psi_n
+
+g_r_phi = cn_g_phi*phi.';       %reconstructed signal g(t) from phi_n
+g_r_psi = cn_g_psi*psi.';       %reconstructed signal f(t) from psi_n
+
+figure(9)
+plot (t,f)
+hold on
+plot (t,f_r_phi, '--')
+plot (t,f_r_psi, '.-')
+xlim([0 T])
+title('Plot of f(t) and its projections on \phi_n and \psi_n')
+xlabel('t [sec]')
+ylabel('f(t) [V]')
+legend('f(t)','f(t) on \phi_n', 'f(t) on \psi_n','Location','southeast')
+
+figure(10)
+plot (t,g)
+hold on
+plot (t,g_r_phi, '--')
+plot (t,g_r_psi, '.-')
+xlim([0 T])
+title('Plot of g(t) and its projections on \phi_n and \psi_n')
+xlabel('t [sec]')
+ylabel('g(t) [V]')
+legend('g(t)','g(t) on \phi_n', 'g(t) on \psi_n','Location','southeast')
+
+Result = 0;
+
+function [c_n] = projection(x,A,T)
+%projection will find the projection coefficients of signal x(t) on the
+%base functions given in matrix A which have period T
+%The function inputs must be :
+%x size (M x 1)
+%A size (M x N)
+%T size (1 x 1) Real number
+c_n = zeros(1,size(A,2));
+
+for i = 1:size(A,2)
+    c_n(i) = trapz(x.*conj(A(:,i)))/(trapz(A(:,i).*conj(A(:,i))));
+end
+end
+
+end
+
+
+
+
+
