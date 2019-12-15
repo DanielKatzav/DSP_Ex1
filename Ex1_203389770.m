@@ -2,20 +2,19 @@ clear all
 close all
 clc
 
-Res = Question1();
-
-
+Res = Question1(3*pi);
+Res = Question2();
+Res = Question3();
 % ----------------- Question 1 ----------------- %
 
-function Result = Question1()
-   
-w_m = 3*pi;
+function Result = Question1(w_m)
+  
 dt = 1/100;
 
 t = 0.2:dt:3;
 x_t = 8./(w_m*t.^2) .* ((sin((1/2)*w_m*t)).^3).*cos(2*w_m*t);
 
-figure(1)
+figure()
 plot(t,x_t)
 title('Signal x(t) - Time domain')
 xlabel('Time [sec]')
@@ -25,70 +24,49 @@ ylabel('x(t) [V]')
 dw = 0.1;
 w = -17*pi:dw:17*pi;
 
-tri_1 = MakeTriangle(dw, 2*w_m, 2.5*w_m); 
-tri_2 = MakeTriangle(dw, 2*w_m, -2.5*w_m);
-tri_3 = MakeTriangle(dw, 2*w_m, 1.5*w_m);
-tri_4 = MakeTriangle(dw, 2*w_m, -1.5*w_m);
+tri_1 = MakeTriangle(w, w_m, 2.5*w_m); 
+tri_2 = MakeTriangle(w, w_m, -2.5*w_m);
+tri_3 = MakeTriangle(w, w_m, 1.5*w_m);
+tri_4 = MakeTriangle(w, w_m, -1.5*w_m);
 
-Xw = (2*pi/w_m)*(tri_1 - tri_2 - tri_3 + tri_4);
+Xw = (2*pi/w_m)*(tri_1 - tri_2 - tri_3 + tri_4); 
 
-figure(2)
+figure()
 plot(w,abs(Xw))
 title('Signal |X(j\omega)| - Scaled Frequency domain')
 xlabel('\omega [rad/sec]')
 ylabel('X(j\omega)')
-xticklabels({'-20\pi', '-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi', '20\pi'})
-xlim([-20*pi,20*pi])
+xticklabels({'-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi'})
+% xlim([-20*pi,20*pi])
 
 w_max = 4.6441*pi;
 BW = 4*w_m;
 w_s = 2*BW;
 Ts = ((2*pi)/w_s);
-n = 1:1/Ts:length(t);
+n = 0.2:Ts:3;
 
-x_zoh = ZOH_me(t,x_t,Ts);
-k = 0;
-x_sample = zeros(length(n),1);
-for m = 0:1/Ts:length(t)-Ts
-    x_sample(k+1,1) = x_zoh(1,k/Ts+1);
-    k = k+1;
-end
-figure(3)
+
+k = 1;
+x_s = zeros(length(n),1);
+Rate = round(1/Ts);
+x_s = 8./(w_m*n.^2) .* ((sin((1/2)*w_m*n)).^3).*cos(2*w_m*n);
+x_zoh = ZOH_me(x_s,x_t,Ts, n);
+
+figure()
 plot(t,x_t,'k','LineWidth',2)
 hold on
 plot(t,x_zoh)
-
+hold on
+stem(n,x_s)
 legend([{'x(t)'};{'x_Z_O_H(t)'}])
 title('Question 1.c - x(t) and x_Z_O_H in Time')
 xlabel('Time [sec]')
 ylabel('Signal x(t) && x_Z_O_H(t) in [V] - 1.c')
 
 
-
-
-x_s = 8./(w_m*t_n.^2) .* ((sin((1/2)*w_m*t_n)).^3).*cos(2*w_m*t_n);
-
-Xw_s = zeros(1,length(w));
-% w_n = round(1:w_s:(length(w)-w_s));
-for w_n = round(1:w_s:(length(w)))
-    Xw_s(w_n) = (1/Ts)*Xw(w_n);
-end
-% figure(4)
-% plot(w, abs(Xw_s))
-
-% figure(4)
-% plot(t,x_t)
-% hold on
-% plot(t_n,x_s, '.')
-% title('Plot of x(t) compared to x_r_e_c(t)')
-% xlabel('t [sec]')
-% ylabel('f(t) [V]')
-% legend('x(t)','x_r_e_c(t)')
-% xlim([0,3])
-
-X_ZOH = Ts*((( exp(-1i*w*(Ts/2))).*(sinc(1i*(w/w_s))) )  .*  Xw_s);
-
-figure(4)
+Xs_w = fft(x_s,length(w));
+X_ZOH = Xs_w * Ts .* exp(-1i*0.5.*w*Ts).*sinc(1i*w/w_s);
+figure()
 plot(w, abs(X_ZOH))
 hold on
 plot(w, abs(Xw))
@@ -99,7 +77,7 @@ xticklabels({'-20\pi', '-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi', '20
 % xlim([-20*pi,20*pi])
 
 Hw = (exp((1i*w*Ts)/2)./sinc(w/w_s)).*(abs(w)<=w_s/2);
-figure(5)
+figure()
 plot(w, abs(Hw))
 title('Question 1.e - H(j\omega) in Scaled Frequency domain')
 xlabel('\omega [rad/sec]')
@@ -109,7 +87,7 @@ xlim([-20*pi,20*pi])
 
 
 Xw_rec = X_ZOH .* Hw;
-figure(6)
+figure()
 plot(w, abs(Xw_rec))
 title('Question 1.e - X_r_e_c(j\omega) in Scaled Frequency domain')
 xlabel('\omega [rad/sec]')
@@ -118,12 +96,12 @@ xticklabels({'-20\pi', '-17\pi','-10\pi','-5\pi','0','5\pi','10\pi','17\pi', '20
 xlim([-20*pi,20*pi])
 
 
-x_rec = zeros(1,length(t_n));
+x_rec = zeros(1,length(t));
 for k = 1:length(t)
    x_rec(k) = trapz(w,Xw_rec.*exp(1i*w*t(k)))/2*pi;
 end
-% x_rec = ifft(Xw_rec,length(t));
-figure(7)
+
+figure()
 plot(t,x_t)
 hold on
 plot(t,x_rec)
@@ -134,36 +112,33 @@ legend('x(t)','x_r_e_c(t)')
 
 Result = 0;
 end
-function x_ZOH = ZOH_me(t, x_t, Ts)
+function x_ZOH = ZOH_me(x_s, x_t, Ts, n)
     %ZOH Sampling of x(t) with intervals n*Ts 
-    Rate = round(1/Ts);
-    x_ZOH = zeros(1,length(x_t));
+    Rate = round(1/Ts)/2;
+    x_ZOH = zeros(length(x_t),1);
     
-   
-    for n = 1:Rate:(length(x_t)-Rate)
-        x_ZOH(n:n+Rate) = x_t(n);
+    m = 1;
+    for k = 1:length(x_s)
+        x_ZOH(m:(m+Rate)) = x_s(k);
+        m = m+Rate;
     end
 end
-function res = MakeTriangle(dw, w_length, w_center)
+function res = MakeTriangle(w, w_length, w_center)
 
-res = [zeros(1,length(-17*pi:dw:w_center-w_length/2)) triang(w_length/dw)' zeros(1,length(w_center+w_length/2:dw:17*pi))];
-    
+dw = (w-w_center)/w_length;
+res = zeros(1,length(w));
+res = (1-abs(dw)).*(abs(dw)<1);
 end
 
 % ----------------- Question 2 ----------------- %
 
 
 function Result2 = Question2()
-close all
-clear all
-
 w_A = 10*pi;
 w_B = 6*pi;
 Ns = 11;
 t = 0:0.01:10;
 n=linspace(0,0.5,Ns); 
-
-
 
 x_t = 1i*cos(w_A*t) + 3i*sin(w_B*t);
 x_p = 1i*cos(w_A*n) + 3i*sin(w_B*n);
@@ -176,6 +151,31 @@ Q2c(t,n,x_t,a,F);
 a = 0;
 b = 0.5;
 random_samples = (sort((b-a).*rand(11,1) + a))';
+x_p = 1i*cos(w_A*random_samples) + 3i*sin(w_B*random_samples);
+Q2a(t,random_samples,x_t,x_p);
+[a,F] = Q2b(random_samples,(x_p));
+Q2c(t,random_samples,x_t,a,F);
+
+% Q2e :
+random_samples = linspace(0,0.5,Ns); 
+for i =1:length(random_samples)
+    random_samples(i) =  random_samples(i)+0.01*rand(1);
+end
+
+x_p = 1i*cos(w_A*random_samples) + 3i*sin(w_B*random_samples);
+
+Q2a(t,random_samples,x_t,x_p);
+[a,F] = Q2b(random_samples,(x_p));
+Q2c(t,random_samples,x_t,a,F);
+
+% Q2f :
+Ns = 40;
+random_samples = linspace(0,0.5,Ns); 
+for i =1:length(random_samples)
+    random_samples(i) =  random_samples(i)+0.01*rand(1);
+end
+
+x_p = 1i*cos(w_A*random_samples) + 3i*sin(w_B*random_samples);
 
 Q2a(t,random_samples,x_t,x_p);
 [a,F] = Q2b(random_samples,(x_p));
@@ -190,7 +190,7 @@ figure()
 plot(t,abs(x_t))
 hold on
 stem(n,abs(x_p))
-title('Plot of x(t) compared to sampled x_p(t) at interval [0,2]')
+title('Plot of x(t) compared to sampled x_p(t) at interval [0,0.5]')
 xlabel('t [sec]')
 ylabel('f(t) [V]')
 legend('x(t)','x_p(t)')
@@ -231,7 +231,7 @@ figure()
 plot(t,abs(x_t))
 hold on
 plot(t_rec,abs(x_r), '--')
-title('Plot of x(t) compared to reconstructed x_r(t) using least squares approx.')
+title('Plot of x(t) compared to reconstructed x_r(t)')
 xlabel('t [sec]')
 ylabel('f(t) [V]')
 legend('x(t)','x_r(t)')
@@ -276,7 +276,7 @@ f_r_psi = cn_f_psi*psi.';       %reconstructed signal f(t) from psi_n
 g_r_phi = cn_g_phi*phi.';       %reconstructed signal g(t) from phi_n
 g_r_psi = cn_g_psi*psi.';       %reconstructed signal f(t) from psi_n
 
-figure(9)
+figure()
 plot (t,f)
 hold on
 plot (t,f_r_phi, '--')
@@ -287,7 +287,7 @@ xlabel('t [sec]')
 ylabel('f(t) [V]')
 legend('f(t)','f(t) on \phi_n', 'f(t) on \psi_n','Location','southeast')
 
-figure(10)
+figure()
 plot (t,g)
 hold on
 plot (t,g_r_phi, '--')
